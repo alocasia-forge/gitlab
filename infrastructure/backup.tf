@@ -3,7 +3,7 @@ resource "aws_backup_vault" "this" {
   name        = "${local.name_prefix}-gitlab-vault"
   kms_key_arn = aws_kms_key.this.arn
   
-  tags = merge(local.default_tag, {
+  tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-gitlab-backup-vault"
   })
 }
@@ -13,7 +13,7 @@ resource "aws_kms_key" "this" {
   description             = "KMS key for GitLab backup encryption"
   deletion_window_in_days = 7
   
-  tags = merge(local.default_tag, {
+  tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-backup-kms-key"
   })
 }

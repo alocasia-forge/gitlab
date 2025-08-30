@@ -1,5 +1,5 @@
 locals {
-  default_tag = {
+  default_tags = {
     "alocasia:environment" = var.environment
     "alocasia:services"     = "gitlab-core"
   }
