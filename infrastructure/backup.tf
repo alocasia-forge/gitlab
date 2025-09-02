@@ -2,7 +2,7 @@
 resource "aws_backup_vault" "this" {
   name        = "${local.name_prefix}-gitlab-vault"
   kms_key_arn = aws_kms_key.this.arn
-  
+
   tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-gitlab-backup-vault"
   })
@@ -12,7 +12,7 @@ resource "aws_backup_vault" "this" {
 resource "aws_kms_key" "this" {
   description             = "KMS key for GitLab backup encryption"
   deletion_window_in_days = 7
-  
+
   tags = merge(local.default_tags, {
     Name = "${local.name_prefix}-backup-kms-key"
   })
@@ -59,14 +59,14 @@ resource "aws_backup_plan" "this" {
   rule {
     rule_name         = "daily_backup"
     target_vault_name = aws_backup_vault.this.name
-    schedule          = "cron(0 3 ? * * *)"  # 0300UTC
-    
+    schedule          = "cron(0 3 ? * * *)" # 0300UTC
+
     start_window      = 480
     completion_window = 600
 
-    recovery_point_tags = merge(local.default_tag, {
+    recovery_point_tags = {
       BackupType = "daily"
-    })
+    }
 
     lifecycle {
       cold_storage_after = var.backup_cold_storage_after
@@ -75,7 +75,7 @@ resource "aws_backup_plan" "this" {
 
     copy_action {
       destination_vault_arn = aws_backup_vault.this.arn
-      
+
       lifecycle {
         cold_storage_after = var.backup_cold_storage_after
         delete_after       = var.backup_retention_days
@@ -87,14 +87,14 @@ resource "aws_backup_plan" "this" {
   rule {
     rule_name         = "weekly_backup"
     target_vault_name = aws_backup_vault.this.name
-    schedule          = "cron(0 4 ? * SUN *)"  # Sunday 0400UTC
-    
+    schedule          = "cron(0 4 ? * SUN *)" # Sunday 0400UTC
+
     start_window      = 480
     completion_window = 600
 
-    recovery_point_tags = merge(local.default_tag, {
+    recovery_point_tags = {
       BackupType = "weekly"
-    })
+    }
 
     lifecycle {
       cold_storage_after = var.backup_cold_storage_after
@@ -102,9 +102,9 @@ resource "aws_backup_plan" "this" {
     }
   }
 
-  tags = merge(local.default_tag, {
+  tags = {
     Name = "${local.name_prefix}-backup-plan"
-  })
+  }
 }
 
 # Backup Selection
@@ -128,22 +128,22 @@ resource "aws_backup_selection" "this" {
 # SNS Topic for backup notifications
 resource "aws_sns_topic" "this" {
   name = "${local.name_prefix}-backup-notifications"
-  
-  tags = merge(local.default_tag, {
+
+  tags = {
     Name = "${local.name_prefix}-backup-notifications"
-  })
+  }
 }
 
 # Backup Vault Notifications
 resource "aws_backup_vault_notifications" "this" {
-  backup_vault_name   = aws_backup_vault.this.name
-  sns_topic_arn       = aws_sns_topic.this.arn
-  
+  backup_vault_name = aws_backup_vault.this.name
+  sns_topic_arn     = aws_sns_topic.this.arn
+
   backup_vault_events = [
     "BACKUP_JOB_STARTED",
     "BACKUP_JOB_COMPLETED",
     "BACKUP_JOB_FAILED",
-    "RESTORE_JOB_STARTED", 
+    "RESTORE_JOB_STARTED",
     "RESTORE_JOB_COMPLETED",
     "RESTORE_JOB_FAILED"
   ]

@@ -1,7 +1,7 @@
 locals {
   default_tags = {
     "alocasia:environment" = var.environment
-    "alocasia:services"     = "gitlab-core"
+    "alocasia:services"    = "gitlab-core"
   }
   name_prefix = "alocasia-gitlab-${var.environment}"
 }
@@ -15,19 +15,32 @@ data "aws_route53_zone" "this" {
 data "aws_ami" "this" {
   most_recent = false
   owners      = ["782774275127"]
-  
+
   filter {
     name   = "image-id"
     values = ["ami-01423c5ee7f64241a"]
   }
 }
 
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+data "terraform_remote_state" "core" {
+  backend = "s3"
+  config = {
+    bucket  = "alocasia-tfstate-${var.environment}"
+    key     = "core/terraform.tfstate"
+    profile = "alocasia"
+    region  = "eu-west-1"
+  }
+}
 
 module "acm" {
-  source  = "terraform-aws-modules/acm/aws"
+  source = "terraform-aws-modules/acm/aws"
 
-  domain_name  = var.domain_name
-  zone_id      = data.aws_route53_zone.this.zone_id
+  domain_name = var.domain_name
+  zone_id     = data.aws_route53_zone.this.zone_id
 
   validation_method = "DNS"
 
@@ -42,40 +55,25 @@ module "acm" {
   }
 }
 
-module "vpc" {
-  source = "terraform-aws-modules/vpc/aws"
-
-  name = local.name_prefix
-  cidr = "10.0.0.0/16"
-
-  azs             = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  database_subnets = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
-  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
-
-  enable_nat_gateway = true
-  single_nat_gateway = true
-}
-
 module "alb" {
   source = "terraform-aws-modules/alb/aws"
 
-  name               = "${local.name_prefix}-alb"
-  vpc_id             = module.vpc.vpc_id
-  subnets            = module.vpc.public_subnets
+  name                       = "${local.name_prefix}-alb"
+  vpc_id                     = data.terraform_remote_state.core.outputs.vpc.id
+  subnets                    = data.terraform_remote_state.core.outputs.public_subnets[*].id
   enable_deletion_protection = false
 
   route53_records = {
     gitlab = {
-      zone_id = data.aws_route53_zone.this.zone_id
-      name    =  var.domain_name
-      type    = "A"
+      zone_id                   = data.aws_route53_zone.this.zone_id
+      name                      = var.domain_name
+      type                      = "A"
       subject_alternative_names = ["*.${var.domain_name}"]
       alias = {
         name                   = module.alb.dns_name
         zone_id                = module.alb.zone_id
         evaluate_target_health = true
-      } 
+      }
     }
   }
 
@@ -99,7 +97,7 @@ module "alb" {
   security_group_egress_rules = {
     all = {
       ip_protocol = "-1"
-      cidr_ipv4   = "10.0.0.0/16"
+      cidr_ipv4   = "0.0.0.0/0"
     }
   }
 
@@ -126,11 +124,11 @@ module "alb" {
 
   target_groups = {
     tg = {
-      name_prefix        = "gitlab"
-      protocol           = "HTTP"
-      port               = 80
-      target_type        = "instance"
-      create_attachment  = false
+      name_prefix       = "gitlab"
+      protocol          = "HTTP"
+      port              = 80
+      target_type       = "instance"
+      create_attachment = false
       health_check = {
         enabled             = true
         healthy_threshold   = 3

@@ -6,16 +6,16 @@ terraform {
     }
   }
   backend "s3" {
-    bucket         = "alocasia-gitlab-dev"
-    key            = "infrastructure/terraform.tfstate"
+    bucket  = "alocasia-gitlab-dev"
+    key     = "infrastructure/terraform.tfstate"
     profile = "alocasia"
-    region         = "eu-west-1"    
+    region  = "eu-west-1"
   }
 }
 
 provider "aws" {
-  region = "eu-west-1"
-    profile = "alocasia"
+  region  = "eu-west-1"
+  profile = "alocasia"
   default_tags {
     tags = local.default_tags
   }

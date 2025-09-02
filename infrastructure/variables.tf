@@ -75,7 +75,7 @@ variable "disk_critical_threshold" {
 variable "disk_low_threshold" {
   description = "Disk low free space threshold percentage"
   type        = number
-  default     = 2 
+  default     = 2
 }
 
 variable "alarm_evaluation_periods" {
@@ -107,4 +107,23 @@ variable "backup_cold_storage_after" {
   description = "Number of days before moving backup to cold storage"
   type        = number
   default     = 30
+}
+
+# RDS Variables
+variable "rds_backup_retention_days" {
+  description = "Number of days to retain RDS backups"
+  type        = number
+  default     = 7
+}
+
+variable "rds_skip_final_snapshot" {
+  description = "Whether to skip the final snapshot when deleting the RDS cluster"
+  type        = bool
+  default     = true
+}
+
+variable "rds_snapshot_identifier" {
+  description = "Identifier for an existing RDS snapshot to restore from (if any)"
+  type        = string
+  default     = null
 }

@@ -32,15 +32,15 @@ resource "aws_iam_instance_profile" "this" {
 resource "aws_ssm_maintenance_window" "this" {
   name        = "${local.name_prefix}-maintenance"
   description = "Maintenance window for GitLab instance"
-  
-  # Sunday 02:00-04:00 UTC
-  schedule          = "cron(0 2 ? * SUN *)"
-  duration          = 2
-  cutoff            = 1
-  allow_unassociated_targets = false
-  enabled           = true
 
-  tags =  {
+  # Sunday 02:00-04:00 UTC
+  schedule                   = "cron(0 2 ? * SUN *)"
+  duration                   = 2
+  cutoff                     = 1
+  allow_unassociated_targets = false
+  enabled                    = true
+
+  tags = {
     Name = "${local.name_prefix}-maintenance-window"
   }
 }
@@ -62,7 +62,7 @@ resource "aws_ssm_patch_baseline" "this" {
   name             = "${local.name_prefix}-gitlab-patch-baseline"
   description      = "Patch baseline for GitLab instance"
   operating_system = "AMAZON_LINUX_2"
-  
+
   approval_rule {
     approve_after_days  = 7
     compliance_level    = "CRITICAL"
@@ -127,7 +127,7 @@ resource "aws_iam_role" "maintenance_window" {
       }
     ]
   })
- }
+}
 
 resource "aws_iam_role_policy_attachment" "maintenance_window" {
   role       = aws_iam_role.maintenance_window.name
